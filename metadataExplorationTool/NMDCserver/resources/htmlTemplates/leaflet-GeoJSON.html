@@ -1,0 +1,108 @@
+<!--
+ Copyright (c) 2015, Christian Michelsen Research AS
+ All rights reserved.
+
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are met:
+ * Redistributions of source code must retain the above copyright
+ notice, this list of conditions and the following disclaimer.
+ * Redistributions in binary form must reproduce the above copyright
+ notice, this list of conditions and the following disclaimer in the
+ documentation and/or other materials provided with the distribution.
+ * Neither the name of the Christian Michelsen Research AS nor the
+ names of its contributors may be used to endorse or promote products
+ derived from this software without specific prior written permission.
+
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ DISCLAIMED. IN NO EVENT SHALL Christian Michelsen Research AS BE LIABLE FOR ANY
+ DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>
+        Norwegian Marine Data Centre
+    </title>
+    <link rel="icon" href="static/favicon.ico"/>
+    <link rel="stylesheet" href="static/bower_components/jquery-ui/themes/smoothness/jquery-ui.css"/>
+    <link rel="stylesheet" href="static/bower_components/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="static/bower_components/leaflet-minimap/src/Control.MiniMap.css" />
+    <link rel="stylesheet" href="static/bower_components/components-font-awesome/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="static/bower_components/leaflet-sidebar/src/L.Control.Sidebar.css"/>
+    <link rel="stylesheet" href="static/leaflet-plugins/L.Control.MousePosition.css" />
+    <link rel="stylesheet" href="static/css/nmdc-map.css" />
+</head>
+
+<body>
+<div id="id_map"></div>
+<div id="id_details"></div>
+<div id="id_settings" class="settings-dialog">
+    <table>
+        <tr>
+            <td>Datasets</td>
+            <td><span id="portalsId"></span></td>
+        </tr>
+        <tr>
+            <td>From Date</td>
+            <td>
+                <input type="text" id="datepickerFrom"/>
+                <button class="clearButton"><span id="datepickerFromClear" class="ui-button-icon-primary ui-icon ui-icon-close"></span></button>
+            </td>
+        </tr>
+        <tr>
+            <td>To Date</td>
+            <td>
+                <input type="text" id="datepickerTo"/>
+                <button class="clearButton"><span id="datepickerToClear" class="ui-button-icon-primary ui-icon ui-icon-close"></span></button>
+            </td>
+        </tr>
+    </table>
+</div>
+<div id="id_content_tabs">
+    <ul>
+        <li><a href="#id_content_div">Content</a></li>
+        <li><a href="#id_content_related_div">Related</a></li>
+        <li><a href="#id_content_select_div">Selection</a></li>
+    </ul>
+    <div id="id_content_div" class="listDiv">
+        <ul id="id_content" class="listContent"></ul>
+    </div>
+    <div id="id_content_related_div" class="listDiv">
+        <ul id="id_content_related" class="listContent"></ul>
+    </div>
+    <div id="id_content_select_div" class="listDiv">
+        <ul id="id_content_select" class="listContent"></ul>
+    </div>
+    <button id="add_selection_button" title="Add content items to selection">Add</button>
+    <button id="clear_selection_button" title="Clear selection">Clear</button>
+    <button id="zoom_to_selected_button" title="Zoom to selection">Zoom to selection</button>
+</div>
+
+<!-- Libs -->
+<script src="static/bower_components/jquery/dist/jquery.min.js"></script>
+<script src="static/bower_components/jquery-ui/jquery-ui.min.js"></script>
+<script src="static/bower_components/leaflet/dist/leaflet.js"></script>
+<script src="static/bower_components/leaflet-minimap/src/Control.MiniMap.js"></script>
+<script src="static/bower_components/leaflet-sidebar/src/L.Control.Sidebar.js"></script>
+<script src="static/bower_components/L.EasyButton/easy-button.js"></script>
+<script src="static/leaflet-plugins/L.Control.MousePosition.js"></script>
+<script src="static/leaflet-plugins/leaflet.restoreview.js"></script>
+<script src="static/js/jquery.ui.touch-punch.min.js"></script>
+
+<!-- Page script -->
+<script src="static/js/areaInsideSliderControl.js"></script>
+<script src="static/js/nmdc-map-navigation.js"></script>
+<script src="static/js/nmdc-map.js"></script>
+
+</body>
+</html>

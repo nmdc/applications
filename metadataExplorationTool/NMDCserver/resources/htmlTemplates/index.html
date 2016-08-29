@@ -1,0 +1,81 @@
+<!--
+ Copyright (c) 2015, Christian Michelsen Research AS
+ All rights reserved.
+
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are met:
+ * Redistributions of source code must retain the above copyright
+ notice, this list of conditions and the following disclaimer.
+ * Redistributions in binary form must reproduce the above copyright
+ notice, this list of conditions and the following disclaimer in the
+ documentation and/or other materials provided with the distribution.
+ * Neither the name of the Christian Michelsen Research AS nor the
+ names of its contributors may be used to endorse or promote products
+ derived from this software without specific prior written permission.
+
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ DISCLAIMED. IN NO EVENT SHALL Christian Michelsen Research AS BE LIABLE FOR ANY
+ DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<!DOCTYPE html>
+<html data-ng-app="nmdcApp">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>
+        Norwegian Marine Data Centre
+    </title>
+    <link rel="icon" href="static/favicon.ico"/>
+    <link rel="stylesheet" href="static/bower_components/bootstrap/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="static/bower_components/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="static/bower_components/leaflet-minimap/src/Control.MiniMap.css" />
+    <link rel="stylesheet" href="static/bower_components/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="static/bower_components/components-font-awesome/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="static/bower_components/leaflet-sidebar/src/L.Control.Sidebar.css"/>
+    <link rel="stylesheet" href="static/bower_components/leaflet.markercluster/dist/MarkerCluster.css"/>
+    <link rel="stylesheet" href="static/bower_components/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
+    <link rel="stylesheet" href="static/leaflet-plugins/L.Control.MousePosition.css" />
+    <link rel="stylesheet" href="static/bower_components/seiyria-bootstrap-slider/dist/css/bootstrap-slider.min.css">
+    <link rel="stylesheet" href="static/bower_components/AngularJS-Toaster/toaster.min.css">
+    <link rel="stylesheet" href="static/css/nmdc-map.css" />
+</head>
+
+<body>
+<div class="full-size" data-ng-view></div>
+
+<!-- Libs -->
+<script src="static/bower_components/jquery/dist/jquery.min.js"></script>
+<script src="static/bower_components/angular/angular.min.js" type="text/javascript"></script>
+<script src="static/bower_components/angular-route/angular-route.min.js" type="text/javascript"></script>
+<script src="static/bower_components/angular-resource/angular-resource.min.js" type="text/javascript"></script>
+<script src="static/bower_components/angular-animate/angular-animate.min.js" type="text/javascript"></script>
+<script src="static/bower_components/angular-sanitize/angular-sanitize.min.js" type="text/javascript"></script>
+<script src="static/bower_components/angular-touch/angular-touch.js"></script>
+<script src="static/bower_components/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="static/bower_components/angular-bootstrap/ui-bootstrap.min.js" type="text/javascript"></script>
+<script src="static/bower_components/angular-bootstrap/ui-bootstrap-tpls.min.js" type="text/javascript"></script>
+<script src="static/bower_components/leaflet/dist/leaflet.js"></script>
+<script src="static/bower_components/leaflet-minimap/src/Control.MiniMap.js"></script>
+<script src="static/bower_components/leaflet-sidebar/src/L.Control.Sidebar.js"></script>
+<script src="static/bower_components/leaflet.markercluster/dist/leaflet.markercluster-src.js"></script>
+<script src="static/bower_components/L.EasyButton/easy-button.js"></script>
+<script src="static/leaflet-plugins/L.Control.MousePosition.js"></script>
+<script src="static/bower_components/angular-bootstrap-slider/slider.js"></script>
+<script src="static/bower_components/seiyria-bootstrap-slider/dist/bootstrap-slider.min.js"></script>
+<script src="static/bower_components/AngularJS-Toaster/toaster.min.js"></script>
+
+<!-- Page script -->
+<script src="static/js/nmdc-map-navigation.js"></script>
+<script src="static/app/app.js"></script>
+<script src="static/app/map.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>
+        Norwegian Marine Data Centre - Download Page
+    </title>
+    <link rel="icon" href="static/favicon.ico"/>
+    <link rel="stylesheet" href="static/bower_components/bootstrap/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="static/bower_components/components-font-awesome/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="static/css/nmdc-map.css"/>
+</head>
+<body>
+
+<script src="static/bower_components/jquery/dist/jquery.min.js"></script>
+<script src="static/bower_components/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+
+<div class="container">
+    <div class="jumbotron">
+        <div class="container-fluid bg-2 text-justify">
+            <div class="row">
+                <div class="col-sm-9 text-justify">
+                    <h1 class="blue-font">NMDC Download Information Page</h1>
+                </div>
+                <div class="col-sm-3">
+                    <a href="http://nmdc.no">
+                        <img class="img-responsive" src="static/NMDC-logo-notext-nb.png"
+                             alt="NMDC - Norwegian Marine Data Centre"/>
+                    </a>
+                </div>
+                <div class="col-sm-12">
+                    <p>This page collects download information for multiple data sets available through the Norwegian
+                        Marine Data Centre (NMDC).</p>
+                </div>
+                <div class="col-sm-3">
+                    <a class="btn btn-primary btn" href="http://nmdc.no/prosjekter/nmdc/om-prosjektet" role="button">Learn
+                        more »</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="well blue-background">
+        <h3 class="blue-font">Data sets</h3>
+        <div class="container-fluid text-justify">
+            <div class="row">
+
+                {% for entry in response %}
+
+                <div class="col-sm-4">
+                    <div class="well">
+                        <h4 data-toggle="collapse" data-target="#{{entry.Entry_ID}}">{{entry.Entry_Title}}</h4>
+                        <div id="{{entry.Entry_ID}}" class="collapse text-justify">
+
+                            <hr>
+                            <h5 data-toggle="collapse" data-target="#{{entry.Entry_ID}}_link"
+                                class="font-bold text-justify">Download links</h5>
+                            <div id="{{entry.Entry_ID}}_link" class="collapse">
+                                {% for url in entry.Data_URL | stringToList %}
+                                <span>
+                                    <a class="ellipse" href="{{url | e}}">
+                                        {{url | e}}
+                                    </a>
+                                    <br>
+                                </span>
+                                {% endfor %}
+                            </div>
+                            <h5 data-toggle="collapse" data-target="#{{entry.Entry_ID}}_summary"
+                                class="font-bold text-justify">Data summary</h5>
+                            <div id="{{entry.Entry_ID}}_summary" class="collapse">
+                                <span>
+                                    {{entry.Data_Summary}}
+                                </span>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+
+    <div class="well well-sm">
+        <footer class="container-fluid text-justify">
+            <p>
+                You where brought here by the experimental map-based search interface of NMDC.
+            </p>
+            <p>
+                <a class="btn btn-primary btn" href="http://nmdc.nodc.no" role="button">Map search »</a>
+                <a class="btn btn-primary btn" href="http://nmdc.no/prosjekter/nmdc/datasett" role="button">Offical
+                    search interface »</a>
+            </p>
+        </footer>
+    </div>
+
+</div>
+</body>
+</html>

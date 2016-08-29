@@ -1,0 +1,243 @@
+<!--
+ Copyright (c) 2015, Christian Michelsen Research AS
+ All rights reserved.
+
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are met:
+ * Redistributions of source code must retain the above copyright
+ notice, this list of conditions and the following disclaimer.
+ * Redistributions in binary form must reproduce the above copyright
+ notice, this list of conditions and the following disclaimer in the
+ documentation and/or other materials provided with the distribution.
+ * Neither the name of the Christian Michelsen Research AS nor the
+ names of its contributors may be used to endorse or promote products
+ derived from this software without specific prior written permission.
+
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ DISCLAIMED. IN NO EVENT SHALL Christian Michelsen Research AS BE LIABLE FOR ANY
+ DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<div class="full-size" ng-controller="MapController as mapCtrl" xmlns:ng-color="http://www.w3.org/1999/xhtml"
+     xmlns:ng-color="http://www.w3.org/1999/xhtml">
+    <toaster-container
+            toaster-options="{'close-button': true, 'position-class' : 'toast-top-right'}"></toaster-container>
+    <div nmdc-map class="full-size" app-state="mapCtrl.appState"></div>
+    <div class="slider-container">
+        <slider class="areaInsideSlider" ng-model="mapCtrl.appState.areaInsideFraction" min="0.0" step="0.1" max="1.0"
+                formater="formatAreaInside" on-stop-slide="onSliderStop(event, value)" showtooltip="hide"
+                tooltip="Amount of area inside" tooltip-placement="bottom"></slider>
+    </div>
+
+    <div id="id_content_tabs">
+        <div class="list-container">
+            <div ng-show="mapCtrl.sidebar.visible && (!mapCtrl.sidebar.mode || mapCtrl.sidebar.mode == 'list')">
+                <tabset>
+                    <tab ng-repeat="tab in ctrl.tabs" active="tab.active">
+                        <tab-heading title="{{tab.title}}">
+                            <i ng-class="tab.icon"></i>
+                        </tab-heading>
+                        <div class="list-content">
+                            <nmdc-feature-list ng-if="tab.id == 'content' || tab.id == 'related'"
+                                               list="tab.list"
+                                               selected="mapCtrl.appState.selectedFeature"
+                                               app-state="mapCtrl.appState"></nmdc-feature-list>
+                            <nmdc-feature-list ng-if="tab.id == 'selection'"
+                                               list="tab.list"
+                                               selected="mapCtrl.appState.selectedDataset"
+                                               app-state="mapCtrl.appState"></nmdc-feature-list>
+                            <nmdc-wms-list ng-if="tab.id == 'wms'"
+                                           list="tab.list"
+                                           selected="mapCtrl.appState.selectedWms"
+                                           app-state="mapCtrl.appState"></nmdc-wms-list>
+                        </div>
+                    </tab>
+                </tabset>
+                <div ng-include="'footer-buttons.html'"></div>
+            </div>
+            <div ng-show="mapCtrl.sidebar.visible && mapCtrl.sidebar.mode == 'details'">
+                <nmdc-detail-list feature="mapCtrl.detailFeature"></nmdc-detail-list>
+                <div ng-include="'footer-buttons.html'"></div>
+            </div>
+            <div ng-show="mapCtrl.sidebar.visible && mapCtrl.sidebar.mode == 'settings'">
+                <h3 class="modal-title">Settings</h3>
+
+                <div class="list-content">
+                    <div ng-include="'settings.html'"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/ng-template" id="nmdc-detail-list.html">
+    <h3 class="detail-title">{{title}}</h3>
+    <div class="list-content" ng-style="{top: detailHeaderHeight +'px'}">
+        <div ng-switch="feature.mode">
+            <div ng-switch-when="cluster">
+                <div ng-include="'feature-cluster.html'"></div>
+            </div>
+            <div ng-switch-default>
+                <div ng-include="'feature-details.html'"></div>
+            </div>
+        </div>
+    </div>
+</script>
+
+<script type="text/ng-template" id="feature-cluster.html">
+    <div class="list-group">
+        <a href="" class="list-group-item"
+           ng-repeat="item in feature.data.datasetDetails track by $index"
+           ng-class="{selected:item.Entry_ID == selected.id}" ng-click="selectItem($index)">{{item.Entry_Title}}</a>
+    </div>
+</script>
+
+
+<script type="text/ng-template" id="footer-buttons.html">
+    <div class="row footer">
+        <button ng-if="mapCtrl.sidebar.mode === 'details' && mapCtrl.detailFeature.mode == 'itemDetails'" class="btn btn-primary" ng-click="mapCtrl.detailFeature.mode = 'cluster'" title="Back to cluster"><i class="fa fa-arrow-left fa-fw"></i></button>
+        <button ng-if="mapCtrl.sidebar.mode === 'details' || !mapCtrl.tabMap.selection.active" class="btn btn-primary" ng-click="mapCtrl.addToSelectedList()" title="Add content items to selection"><i class="fa fa-plus fa-fw"></i></button>
+        <button ng-if="mapCtrl.tabMap.selection.active" class="btn btn-primary" ng-click="mapCtrl.deleteSelectedItem()" ng-disabled="!mapCtrl.appState.selectedFeature" title="Delete selected item"><i class="fa fa-times fa-fw"></i></button>
+        <button class="btn btn-primary" ng-click="mapCtrl.zoomToSelection()" title="Zoom"><i class="fa fa-search fa-fw"></i></button>
+        <button ng-if="mapCtrl.sidebar.mode !== 'details'" class="btn btn-primary" ng-disabled="!mapCtrl.appState.selectedFeature" ng-click="mapCtrl.showDetails(mapCtrl.appState.selectedFeature.id)" title="More information"><i class="fa fa-info fa-fw"></i></button>
+        <button ng-if="mapCtrl.sidebar.mode === 'details' || mapCtrl.tabMap.selection.active" class="mailTo-button btn btn-primary" ng-click="mapCtrl.mailTo(mapCtrl.sidebar.mode)" title="MailTo"><i class="fa fa-share-alt fa-fw"></i></button>
+        <button ng-if="mapCtrl.sidebar.mode === 'details' && mapCtrl.detailFeature.viewModel.wms !== null" ng-click="mapCtrl.maybeAddWms()" class="btn btn-primary" title="Add as wms-layer(s)"><i class="fa fa-map-o fa-fw"></i></button>
+        <button ng-if="mapCtrl.sidebar.mode === 'details'" class="btn btn-primary" ng-click="mapCtrl.setSidebarMode('list')" title="List"><i class="fa fa-list"></i></button>
+    </div>
+</script>
+
+<script type="text/ng-template" id="feature-details.html">
+    <div class="feature-details-container">
+        <accordion close-others="false">
+            <accordion-group ng-repeat="(key, value) in feature.viewModel.details" ng-class="{firstLine: $index == 0}">
+                <accordion-heading>
+                    <div>{{key | titleCase }}</div>
+                </accordion-heading>
+                <span ng-repeat="item in value track by $index" class="detail-value-item">
+                    <span ng-switch="item.type">
+                        <span ng-switch-when="url">
+                            <a ng-href="{{item.url}}" target="_blank">
+                                <div>{{item.text}}</div>
+                            </a>
+                        </span>
+                        <span ng-switch-when="expand">
+                            <a ng-href="" ng-click="item.expanded = !item.expanded">
+                                <div>{{item.text}}</div>
+                            </a>
+                            <span ng-if="item.expanded" class="detail-value-item">
+                                {{item.fullText}}
+                            </span>
+                        </span>
+                        <span ng-switch-default>
+                            <div>{{item.text}}</div>
+                        </span>
+                    </span>
+                </span>
+            </accordion-group>
+        </accordion>
+    </div>
+</script>
+
+<script type="text/ng-template" id="feature-details-table.html">
+    <div class="">
+        <table class="table table-responsive">
+            <tbody>
+            <tr ng-repeat="(key, value) in feature.viewModel.details" ng-class="{firstLine: $index == 0}">
+                <td class="feature-label">{{key | titleCase }}</td>
+                <td>
+                    <span ng-repeat="item in value track by $index" class="detail-value-item">
+                        <span ng-switch="item.type">
+                            <span ng-switch-when="url">
+                                <a ng-href="{{item.url}}" target="_blank">{{item.text}}</a>
+                            </span>
+                            <span ng-switch-when="expand">
+                                <a ng-href="" ng-click="item.expanded = !item.expanded">{{item.text}}</a>
+                                <span ng-if="item.expanded" class="detail-value-item">
+                                    {{item.fullText}}
+                                </span>
+                            </span>
+                            <span ng-switch-default>
+                                {{item.text}}
+                            </span>
+                        </span>
+                    </span>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</script>
+
+<script type="text/ng-template" id="modal-feature-details.html">
+    <div class="modal-header">
+        <h3 class="modal-title">{{feature.title}}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close" ng-click="cancel()"><span
+                    aria-hidden="true">&times;</span></button>
+        </h3>
+    </div>
+    <div class="modal-body">
+        <div ng-include="'feature-details.html'"></div>
+    </div>
+</script>
+
+<script type="text/ng-template" id="datePicker.html">
+    <p class="input-group">
+        <input type="text" class="form-control" datepicker-popup="{{format}}"
+               ng-model="ngModel"
+               is-open="ctrl.opened"
+               datepicker-options="{startingDay: 1, initDate: null, minMode: 'month'}"
+               close-text="Close"
+               datepicker-mode="'month'"
+               ng-focus="ctrl.maybeBlur($event)"
+        />
+        <span class="date-clear glyphicon glyphicon-remove-circle" ng-click="ctrl.clear()"></span>
+        <span class="input-group-btn">
+            <button type="button" class="btn btn-default" ng-click="ctrl.open($event)"><i
+                    class="glyphicon glyphicon-calendar"></i></button>
+        </span>
+    </p>
+</script>
+
+<script type="text/ng-template" id="settings.html">
+    <form>
+        <div class="form-group">
+            <label>From Date</label>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <nmdc-date-picker ng-model="ctrl.appState.timeScope.from"
+                                      format="{{ctrl.appState.dateFormat}}"></nmdc-date-picker>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>To Date</label>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <nmdc-date-picker ng-model="ctrl.appState.timeScope.to"
+                                      format="{{ctrl.appState.dateFormat}}"></nmdc-date-picker>
+                </div>
+            </div>
+        </div>
+    </form>
+</script>
+
+<script type="text/ng-template" id="modal-settings.html">
+    <div class="modal-header">
+        <h3 class="modal-title">Settings
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close" ng-click="ctrl.cancel()"><span
+                    aria-hidden="true">&times;</span></button>
+        </h3>
+    </div>
+    <div class="modal-body">
+        <div ng-include="'settings.html'"></div>
+    </div>
+</script>

@@ -1,0 +1,565 @@
+/* Copyright (c) 2015, Christian Michelsen Research AS
+ All rights reserved.
+
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are met:
+ * Redistributions of source code must retain the above copyright
+ notice, this list of conditions and the following disclaimer.
+ * Redistributions in binary form must reproduce the above copyright
+ notice, this list of conditions and the following disclaimer in the
+ documentation and/or other materials provided with the distribution.
+ * Neither the name of the Christian Michelsen Research AS nor the
+ names of its contributors may be used to endorse or promote products
+ derived from this software without specific prior written permission.
+
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ DISCLAIMED. IN NO EVENT SHALL Christian Michelsen Research AS BE LIABLE FOR ANY
+ DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+/*bug fix for android 4.3(?) browser transition bug*/
+/*
+body {
+    -webkit-animation: bugfix infinite 1s;
+}
+
+@-webkit-keyframes bugfix {
+    from {
+        padding: 0;
+    }
+    to {
+        padding: 0;
+    }
+}
+*/
+
+html {
+    height: 100%;
+    width: 100%;
+}
+
+body {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.full-size {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.full-size .leaflet-map-pane .leaflet-tile-pane {
+    width: 100%;
+    height: 100%
+}
+
+.layoutTable {
+    border-collapse: collapse;
+}
+
+.space {
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+.nowrap {
+    white-space: nowrap;
+}
+
+.listDiv {
+    overflow: auto;
+}
+
+.listContent {
+    margin: 0;
+    padding: 0;
+}
+
+.listContent li {
+    list-style: none;
+}
+
+.listContent li a {
+    outline: none;
+}
+
+.listContent li.cl_row_even {
+    background: #f6f6f6;
+}
+
+.listContent li.cl_row_odd {
+    background: #ffffff;
+}
+
+.listContent .ui-selected {
+    background-color: yellow !important;
+}
+
+.detailsTable, .detailsTable tr, .detailsTable td {
+    padding: 3px;
+    border: 1px solid;
+    border-collapse: collapse;
+}
+
+#id_map {
+    height: 100%;
+    width: 100%;
+}
+
+#id_details {
+    overflow: scroll;
+    z-index: 2000 !important;
+}
+
+#id_content_tabs .ui-widget-header {
+    border: none;
+    background: inherit;
+}
+
+#id_content_tabs .ui-tabs-anchor {
+    /*height: 11px;*/
+}
+
+#id_content_tabs {
+    /*font-size: 15px;*/
+}
+
+/* set z-index for datepicker class to avoid leaflet map zoom tools to show through */
+.ui-datepicker {
+    z-index: 2000 !important;
+}
+
+.ui-dialog {
+    z-index: 2000 !important;
+}
+
+.settings-dialog table td {
+    padding: 5px;
+}
+
+#leaflet-area-inside-slider {
+    width: 200px;
+    margin-right: 20px;
+    margin-top: 10px;
+}
+
+#leaflet-area-inside-slider .ui-state-default {
+    top: -7px;
+    height: 1.7em;
+    width: 1.7em
+}
+
+.clearButton {
+    padding: 0;
+    width: 20px;
+    height: 20px;
+}
+
+.slider.slider-horizontal {
+    max-width: 100%;
+}
+
+.areaInsideSlider {
+    position: absolute;
+    top: 30px;
+    right: 20px;
+    max-width: 50%;
+    width: 200px;
+}
+
+.slider-handle {
+    opacity: 1;
+    background: #1F8AA5;
+    width: 22px;
+    height: 22px;
+    margin-top: -6px !important;
+}
+
+.slider-track {
+    border: 1px solid #9b9b9b;
+    height: 12px !important;
+}
+
+.slider-container .tooltip-inner {
+    background-color: #1F8AA5;
+}
+
+.slider-container .tooltip-arrow {
+    color: #1F8AA5;
+}
+
+.nmdc-map-popup a {
+    font-size: 18px;
+}
+
+.nmdc-map-popup h4 {
+    color: #333;
+}
+
+.feature-details-container .panel-title a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.feature-details-container .panel-heading {
+    text-decoration: none;
+}
+
+.feature-details-container .panel-heading:hover {
+    background-color: #f9f9f9;
+}
+
+.feature-details-container .panel {
+    border-color: #f9f9f9
+}
+
+.feature-details {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #ffffff;
+    opacity: 1;
+    z-index: 10000;
+    max-height: 500px;
+    overflow-y: scroll;
+}
+
+.feature-details td {
+    white-space: normal;
+    max-width: 250px;
+}
+
+tr .feature-label {
+    white-space: nowrap;
+}
+
+.firstLine td {
+    border-top: none !important;
+}
+
+.footer {
+    position: absolute;
+    bottom: 10px;
+    margin-left: 15px;
+}
+
+.header {
+    margin-left: 15px;
+}
+
+.header .btn-primary:hover,
+.header .btn-primary:focus,
+.header .btn-primary.focus,
+.footer .btn-primary:hover,
+.footer .btn-primary:focus,
+.footer .btn-primary.focus {
+    background-color: #1F8AA5 !important;
+    border-color: #1F8AA5
+}
+
+.header .btn-primary:active,
+.header .btn-primary.active,
+.footer .btn-primary:active,
+.footer .btn-primary.active {
+    background-color: #1F8AA5 !important;
+    border-color: #1F8AA5
+}
+
+.btn-primary:disabled {
+    background-color: #98D5E0;
+    color: #f9f9f9;
+    border: 0 transparent solid;
+}
+
+.btn-primary {
+    color: #f9f9f9;
+    background-color: #239FC1;
+}
+
+.btn-primary:hover {
+    background-color: #1F8AA5 !important;
+    border-color: #1F8AA5
+}
+
+.btn {
+    border-color: #1F8AA5
+}
+
+.list-content {
+    position: absolute;
+    top: 85px;
+    /*margin-right: 12px;*/
+    bottom: 50px;
+    height: auto;
+    overflow-y: auto;
+    /*width: 94%;*/
+    right: 12px;
+    left:12px;
+}
+
+.list-content div {
+    width: 100%;
+}
+.list-group .list-group-item {
+    padding: 10px 10px;
+}
+
+.list-container {
+    margin-top: 25px;
+}
+.leaflet-sidebar > .leaflet-control{
+    padding: 8px 12px;
+}
+.leaflet-sidebar .close {
+    margin-top: -5px;
+    margin-right: -15px;
+    font-size: 25px;
+}
+
+.list-group a {
+    color: #333;
+}
+
+a.list-group-item:focus, a.list-group-item:hover, .list-group-item.selected {
+    color: #239FC1;
+    background-color: #f9f9f9;
+}
+
+.list-group-item.selected {
+    font-weight: bold;
+}
+
+.wms-list {
+    word-wrap: break-word;
+}
+
+.nav-tabs > li {
+    height: 40px;
+}
+
+.nav-tabs > li.active > a, .nav-tabs > li.active > a:focus, .nav-tabs > li.active > a:hover {
+    color: #239FC1;
+    background-color: #f9f9f9;
+}
+
+.nav-tabs > li > a:hover {
+    background-color: #f9f9f9;
+}
+
+.nav-tabs > li .related-tab-icon {
+    color: #f9f9f9;
+}
+
+.nav-tabs > li .content-tab-icon {
+    background-color: #f9f9f9;
+}
+
+.nav-tabs > li.active .related-tab-icon {
+    background-color: #239FC1;
+}
+
+.nav-tabs > li.active .content-tab-icon {
+    color: #239FC1;
+    border-color: #239FC1;
+}
+
+.nav-tabs > li > a {
+    color: #333;
+    font-weight: normal;
+}
+
+.list-group-item {
+    border: none;
+}
+
+.modal-title {
+    color: #239FC1;
+    font-weight: bold;
+    white-space: nowrap;
+    overflow-x: hidden;
+}
+
+.detail-title {
+    color: #239FC1;
+    font-weight: bold;
+    overflow: hidden;
+}
+
+.leaflet-container a.mailTo-button {
+    color: white;
+}
+
+.fa-larger {
+    font-size: 1.8em;
+}
+
+.date-clear {
+    position: absolute;
+    right: 50px;
+    top: 0;
+    bottom: 0;
+    height: 14px;
+    margin: auto;
+    font-size: 14px;
+    cursor: pointer;
+    color: #ccc;
+    z-index: 2;
+}
+
+.converted-cluster {
+    width: 32px;
+    height: 32px;
+    background-color: rgba(51, 51, 51, 0.6);
+    text-align: center;
+}
+
+.converted-cluster div {
+    width: 32px;
+    height: 32px;
+    margin-left: 5px;
+    margin-top: 5px;
+    color: rgb(204, 204, 204);
+    text-align: center;
+    font: 12px "Helvetica Neue", Arial, Helvetica, sans-serif;
+}
+
+.converted-cluster span {
+    line-height: 32px;
+}
+
+.detail-value-item {
+    display: block;
+    text-align: justify;
+    text-justify: inter-word;
+}
+
+.ellipse {
+    width: 100%;
+    display: inline-block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.blue-background {
+    background: rgb(213, 232, 240);
+}
+
+.blue-font {
+    color: #239FC1 !important;
+}
+
+.font-bold {
+    font-weight: bold;
+}
+
+.bottom-buffer {
+    margin-bottom: 20px;
+}
+
+.list-icon {
+    background-size: cover;
+    background-repeat: no-repeat;
+    width: 20px;
+    height: 20px;
+    vertical-align: top;
+}
+
+.list-icon:before {
+    content: '\00a0';
+}
+
+.list-icon:selected {
+    color: #239FC1;
+    fill: #239FC1;
+}
+
+.content-tab-icon {
+    background-color: #ffffff;
+    color: #333;
+    border-radius: 3px;
+    border: solid 1px #333;
+    vertical-align: top;
+    padding: 0 5px 2px 5px;
+}
+
+.content-tab-icon:before {
+    content: '\f0c8';
+    font-size: .5em;
+}
+
+.content-tab-icon:selected {
+    background-color: #239FC1;
+}
+
+.related-tab-icon {
+    background-color: #333;
+    color: white;
+    border-radius: 3px;
+    vertical-align: top;
+    padding: 0 5px 2px 5px;
+}
+
+.related-tab-icon:before {
+    content: '\f0c8';
+    font-size: .5em;
+}
+
+.related-tab-icon:selected {
+    background-color: #239FC1;
+}
+
+.related-icon {
+    background-image: url("/static/related.svg");
+}
+
+.content-icon {
+    background-image: url("/static/content.svg");
+}
+
+.collapse {
+    cursor: pointer;
+}
+
+.align-right {
+    float: right
+}
+
+@media (max-width: 480px) and (orientation: portrait), (max-width: 768px) and (orientation: landscape) {
+    .leaflet-control-minimap {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .img-responsive {
+        max-width: 20%;
+        min-width: 5em;
+    }
+}
+
+@media (min-width: 767px) {
+    .row {
+        display: -webkit-box;
+        display: -webkit-flex;
+        display: -ms-flexbox;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .row > [class*='col-'] {
+        display: flex;
+        flex-direction: column;
+    }
+}
+
