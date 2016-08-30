@@ -1,7 +1,7 @@
 # applications
 
 ## Web base metadata exploration tool
-1. clone repository
+1. clone or download repository
 2. install Python2.7 (if not already installed)
 3. on Windows (32-bit): run check_and_install_modules
   other platforms: install corresponding packages manually
