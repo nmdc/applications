@@ -1,0 +1,146 @@
+
+/*
+    Created on : 28-Feb-2017, 13:38:06
+    Author     : Terry Hannant <a5119>
+*/
+
+.title
+{
+    font-size:16pt;
+    font-weight: bold;
+}
+
+.map {
+    height: 400px;
+}
+
+.header-bar {
+    width:100%;
+    height:5px;
+    background-color:#69B6DD;
+}
+
+#heading-title {
+    xbackground-color:#69B6DD;
+    padding-top: 10px
+}
+
+#header-links {
+    height:75px;
+    xbackground-color:#69B600;
+    display: inline-block;
+    vertical-align: bottom;
+    float: none;
+    padding-top: 50px
+}
+
+.left-col {
+    padding-left:0px;
+}
+
+.right-col {
+    padding-right:0px;
+}
+
+#dataset-title{
+    margin-bottom: 10px;
+}
+
+.doi {
+    margin-top: 10px;
+}
+
+.recomended-citation {
+    margin-bottom: 5px;
+}
+
+
+.cite-creator {
+    font-weight: bold;
+}
+
+.cite-date {
+    font-weight: bold;
+}
+
+.science_keyword {
+    border: 1px solid #e3e3e3;
+    border-radius: 4px;
+    -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.05);
+    box-shadow: inset 0 1px 1px rgba(0,0,0,.05);
+    background:#f5f5f5;
+    margin-bottom: 2px;
+}
+
+.download_type {
+    font-size:10px;
+}
+
+
+.metadata_label {
+    font-weight: bold;
+}
+
+.dataset {
+    margin-top: 20px;
+}
+
+.abstract {
+    outline: 1px solid;
+    margin-top: 10px;
+    margin-bottom: 15px;
+
+}
+
+.abstract > .row {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+
+#dataset-extent {
+    visibility:hidden;
+}
+
+#dataset-xml {
+    visibility:hidden;
+}
+
+.noSpatialMap {
+    border: 1px solid #e3e3e3;
+    border-radius: 4px;
+    -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.05);
+    box-shadow: inset 0 1px 1px rgba(0,0,0,.05);
+    background:#f5f5f5;
+}
+
+#noSpatial {
+    font-weight: bold;
+    font-size: 18px;
+    width: 100%;
+    text-align: center;
+    margin-top: 200px;
+    visibility:hidden;
+}
+
+
+.raw-dialog {
+    width: 60%; /* either % (e.g. 60%) or px (400px) */
+}
+
+.load-tab {
+    height:1000px; //Hack to stop scrolling on initial tab click
+}
+
+.tab-pane .well{
+    border-top:none;
+}
+
+
+.prettyprint{
+    border-top:none;
+}
+.table.data-downloads {
+    margin-left: -8px;
+    margin-right: -8px;
+}
