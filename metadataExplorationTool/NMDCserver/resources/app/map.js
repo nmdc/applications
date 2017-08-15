@@ -1,27 +1,37 @@
-/* Copyright (c) 2016 Norwegian Marine Data Centre
+/* Copyright (c) 2016, Christian Michelsen Research AS
+ All rights reserved.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
-rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
-persons to whom the Software is furnished to do so, subject to the following conditions:
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are met:
+ * Redistributions of source code must retain the above copyright
+ notice, this list of conditions and the following disclaimer.
+ * Redistributions in binary form must reproduce the above copyright
+ notice, this list of conditions and the following disclaimer in the
+ documentation and/or other materials provided with the distribution.
+ * Neither the name of the Christian Michelsen Research AS nor the
+ names of its contributors may be used to endorse or promote products
+ derived from this software without specific prior written permission.
 
-The above copyright notice and this permission notice shall be included in all copies or substantial
-portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
-WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ DISCLAIMED. IN NO EVENT SHALL Christian Michelsen Research AS BE LIABLE FOR ANY
+ DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 (function () {
     'use strict';
 
     angular.module('nmdcApp.map', [])
-        .controller('MapController', ['$rootScope', '$scope', '$modal', 'toaster', 'utils', 'appState', 'dataService', MapController])
+        .controller('MapController', ['$rootScope', '$scope', '$uibModal', 'toaster', 'utils', 'appState', 'dataService', MapController])
         .controller('DetailModalInstanceCtrl', DetailModalInstanceController)
         .controller('SettingsModalInstanceCtrl', ['$scope', '$modalInstance', 'appState', SettingsModalInstanceCtrl])
-        .directive('nmdcMap', ['$window', '$rootScope', '$compile', 'layerStyle', mapDirective])
+        .directive('nmdcMap', ['$window', '$rootScope', '$compile', 'toaster', 'utils', 'layerStyle', mapDirective])
         .directive('nmdcDetailList', ['$window', '$timeout', 'utils', detailList])
         .directive('nmdcFeatureList', ['$rootScope', '$timeout', featureList])
         .directive('nmdcWmsList', ['$rootScope', wmsList])
@@ -34,9 +44,11 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
         ctrl.appState = appState;
         ctrl.sidebar = {visible: false};
         ctrl.list = ctrl.appState.completeList;
+        ctrl.activeTabIndex = 0;
         ctrl.tabs = [
             // { title:'Content', list: ctrl.appState.content.features, id: 'content', icon: 'fa fa-lg fa-square'},
             {
+                index: 0,
                 title: 'Content inside',
                 list: ctrl.appState.content.features,
                 id: 'content',
@@ -46,19 +58,28 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
             // { title:'Related', list: ctrl.appState.related.features, id: 'related', icon: 'fa fa-lg related-icon list-icon'},
             // { title:'Related', list: ctrl.appState.related.features, id: 'related', icon: 'fa fa-lg fa-square-o'},
             {
+                index: 1,
                 title: 'Related content',
                 list: ctrl.appState.related.features,
                 id: 'related',
                 icon: 'fa fa-lg related-tab-icon'
             },
             {
+                index: 2,
                 title: 'Selected items',
                 list: ctrl.appState.selectedList,
                 disabled: true,
                 id: 'selection',
                 icon: 'fa fa-lg fa-shopping-cart'
             },
-            {title: 'WMS items', list: ctrl.appState.wmsList, disabled: true, id: 'wms', icon: 'fa fa-lg  fa-map'}
+            {
+                index: 3,
+                title: 'WMS items',
+                list: ctrl.appState.wmsList,
+                disabled: true,
+                id: 'wms',
+                icon: 'fa fa-lg  fa-map'
+            }
         ];
         ctrl.tabMap = getIdMap(ctrl.tabs);
         ctrl.addToSelectedList = addToSelectedList;
@@ -148,7 +169,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
         function addToSelectedList() {
             if (!ctrl.appState.selectedFeature) return;
             var feature = ctrl.appState.selectedFeature;
-            if (ctrl.sidebar.mode === 'details' && ctrl.detailFeature && ctrl.detailFeature.mode == 'itemDetails') {
+            if (ctrl.sidebar.mode === 'details' && ctrl.detailFeature && ctrl.detailFeature.mode === 'itemDetails') {
                 var dataset = ctrl.detailFeature.data.datasetDetails[ctrl.detailFeature.selectedIndex];
                 feature = {
                     id: feature.id,
@@ -182,7 +203,9 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
         }
 
         function zoomToSelection() {
-            $rootScope.$emit("zoom-to-selection", {featureId: ctrl.appState.selectedFeature.id});
+            if (ctrl.appState.selectedFeature) {
+                $rootScope.$emit("zoom-to-selection", {featureId: ctrl.appState.selectedFeature.id});
+            }
         }
 
         function setSidebarMode(mode) {
@@ -193,12 +216,13 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
         function showDetails(featureId) {
             ctrl.setSidebarMode('details');
             dataService.getDetails(featureId, null, function (data) {
+                var hasContent = (data.datasetDetails && data.datasetDetails.length > 0);
                 ctrl.detailFeature = {
                     featureId: featureId,
                     data: data,
                     selectedIndex: 0,
                     title: ctrl.appState.featureMap[featureId].properties.description,
-                    viewModel: utils.getFeatureDetailViewModel(data.datasetDetails[0])
+                    viewModel: hasContent ? utils.getFeatureDetailViewModel(data.datasetDetails[0]) : {}
                 };
                 //openDetailsModal(changeObj, data);
             });
@@ -220,11 +244,26 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
             if (ctrl.detailFeature.viewModel.wms) {
                 dataService.getWmsParameters(ctrl.detailFeature.viewModel.wms, function (data) {
                     if (data && data.wmsParams && data.wmsParams.length > 0) {
-                        var wmsItems = addToWmsList(data, ctrl.detailFeature);
-                        setCurrentWms(wmsItems[0]);
+                        var count = 0;
+                        data.wmsParams.forEach(function (wmslayer) {
+                            if (utils.getValidCrs(wmslayer.crsOptions)) {
+                                count++;
+                            }
+                        });
+                        if (count > 0) {
+                            var wmsItems = addToWmsList(data, ctrl.detailFeature);
+                            setCurrentWms(wmsItems[0]);
+                        } else {
+                            toaster.pop({
+                                type: 'error',
+                                title: "Sorry",
+                                body: 'Not able to add wms. No layers with valid projection (' + utils.validProjections + ')',
+                                bodyOutputType: 'trustedHtml'
+                            });
+                        }
                     }
                     else {
-                        console.log("No wmsParams", data.error);
+                        toaster.pop('error', "Sorry", "Not able to add wms");
                     }
                 });
             }
@@ -345,36 +384,39 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
         };
     }
 
-    function mapDirective($window, $rootScope, $compile, layerStyle) {
+    function mapDirective($window, $rootScope, $compile, toaster, utils, layerStyle) {
         return {
             restrict: 'A',
             scope: {appState: '='},
             link: function (scope, element, attributes) {
                 var appState = scope.appState;
-                var geoJsonLayer = L.geoJson(null, getGeoJsonOptions()), layerMap = {}, regularMarkersCluster = new L.MarkerClusterGroup({
+                var geoJsonLayer = L.geoJson(null, getGeoJsonOptions());
+                var layerMap = {};
+                var lastSelectedLayer = null;
+                var hasPopup = false;
+                var startPosition = scope.appState.center;
+
+                var regularMarkersCluster = new L.MarkerClusterGroup({
                     polygonOptions: {
                         color: '#333333',
                         weight: 3,
                         opacity: 0.8,
                         fillOpacity: 0.5,
                         fillColor: '#333333'
-                    }, disableClusteringAtZoom: 7
+                    }
                 });
-                var convertedMarkersCluster = new L.MarkerClusterGroup({
-                        iconCreateFunction: function (cluster) {
-                            var markers = cluster.getAllChildMarkers();
-                            var marker_html = '<div class="converted-cluster">' + markers.length + '</div>';
-                            return L.divIcon({
-                                html: marker_html,
-                                className: 'converted-cluster',
-                                iconSize: L.point(32, 32)
-                            });
-                        }, maxClusterRadius: 1, zoomToBoundsOnClick: false
-                    }),
-                    lastSelectedLayer = null, hasPopup = false;
-                var startPosition = scope.appState.center;
-
-                convertedMarkersCluster.on('clusterclick', function (a) {
+                var convertedPolyDatasetMarkersCluster = new L.MarkerClusterGroup({
+                    iconCreateFunction: function (cluster) {
+                        var markers = cluster.getAllChildMarkers();
+                        var marker_html = '<div class="converted-cluster">' + markers.length + '</div>';
+                        return L.divIcon({
+                            html: marker_html,
+                            className: 'converted-cluster',
+                            iconSize: L.point(32, 32)
+                        });
+                    }, maxClusterRadius: 1, zoomToBoundsOnClick: false
+                });
+                convertedPolyDatasetMarkersCluster.on('clusterclick', function (a) {
                     // a.layer is actually a cluster
                     a.layer.spiderfy();
                 });
@@ -434,7 +476,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
                     attribution: '&copy; <a href="http://kartverket.no">Kartverket</a>'
                 });
 
-                var kartverketSjokart2 = L.tileLayer('http://opencache.statkart.no/gatekeeper/gk/gk.open_gmaps?layers=sjo_hovedkart2&zoom={z}&x={x}&y={y}', {
+                var kartverketSjokart2 = L.tileLayer('http://opencache.statkart.no/gatekeeper/gk/gk.open_gmaps?layers=norges_grunnkart&zoom={z}&x={x}&y={y}', {
                     maxZoom: 20,
                     attribution: '&copy; <a href="http://kartverket.no">Kartverket</a>'
                 });
@@ -457,17 +499,8 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
                 var addedLayers = [];
 
                 var bathymetryGroupLayer = L.layerGroup([bathymetryLayer, coastlinesLayer]);
-                var dataLayerGroup = L.layerGroup([convertedMarkersCluster, regularMarkersCluster, geoJsonLayer]);
+                var dataLayerGroup = L.layerGroup([convertedPolyDatasetMarkersCluster, regularMarkersCluster, geoJsonLayer]);
                 var overlays = {"Data set overlay": dataLayerGroup};
-
-                var crsArray = {
-                    'EPSG:3395': L.CRS.EPSG3395,
-                    'EPSG:3857': L.CRS.EPSG3857,
-                    'EPSG:4326': L.CRS.EPSG4326,
-                    'EPSG:900913': L.CRS.EPSG900913,
-                    '': L.CRS.EPSG3857 // if no info, we take our chance with the standard projection
-                };
-
 
                 var baseLayers = {
                     "Open Street map": defaultBaseLayer,
@@ -504,18 +537,18 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
                 });
                 map.addControl(sidebar);
 
-                var sidebarOpenControl = L.easyButton('fa-bars', function () {
+                var sidebarOpenControl = L.easyButton('fa-lg fa-bars', function () {
                         scope.$emit("map-feature-list", {});
                         sidebar.show();
                     }, 'List Sidebar', map
-                );
+                ).addTo(map);
 
                 // Settings Control
-                var settingsControl = L.easyButton('fa-cog', function () {
+                var settingsControl = L.easyButton('fa-lg fa-cog', function () {
                         scope.$emit("map-settings", {});
                         sidebar.show();
                     }, 'Settings', map
-                );
+                ).addTo(map);
 
                 //bbox history navbar
                 var nmdcNavbar = L.control.nmdcNavbar();
@@ -647,8 +680,8 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
                     if (regularMarkersCluster !== null) {
                         regularMarkersCluster.clearLayers();
                     }
-                    if (convertedMarkersCluster !== null) {
-                        convertedMarkersCluster.clearLayers();
+                    if (convertedPolyDatasetMarkersCluster !== null) {
+                        convertedPolyDatasetMarkersCluster.clearLayers();
                     }
 
                     var regularMarkers = [];
@@ -699,7 +732,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
                                 }
                             }
                         }
-                        convertedMarkersCluster.addLayers(convertedMarkers);
+                        convertedPolyDatasetMarkersCluster.addLayers(convertedMarkers);
                         regularMarkersCluster.addLayers(regularMarkers);
 
                     }
@@ -709,7 +742,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
                     for (var layerID in geoJsonLayer._layers) {
                         var layer = geoJsonLayer._layers[layerID];
                         layer.setStyle(id === layer.feature.id ? layerStyle.highlight : layer.feature.properties.converted ? layerStyle.cluster : layerStyle.normal);
-                        if (zoomToSelected && id === layer.feature.id) {
+                        if (zoomToSelected && id === layer.feature.id && layer.getBounds) {
                             map.fitBounds(layer.getBounds(), {maxZoom: 8});
                         }
                     }
@@ -826,9 +859,9 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
                 function getPopupHtml(featureId, title) {
                     return '<div class="nmdc-map-popup">' +
                         '<h4>' + title + '</h4>' +
-                            /**/       '<button class="btn btn-primary" type="submit" ng-click="openDetails(' + "'" + featureId + "', '" + featureId + "'" + ')"><i class="fa fa-info fa-fw"></i></button>' +
-                            ///**/       '<a href="" ng-click="openDetails(' + "'" + featureId + "'" + ')">Show details</a>' +
-                            /**/   '</div>';
+                        /**/       '<button class="btn btn-primary" type="submit" ng-click="openDetails(' + "'" + featureId + "', '" + featureId + "'" + ')"><i class="fa fa-info fa-fw"></i></button>' +
+                        ///**/       '<a href="" ng-click="openDetails(' + "'" + featureId + "'" + ')">Show details</a>' +
+                        /**/   '</div>';
                 }
 
                 scope.openDetails = function (featureId) {
@@ -841,10 +874,8 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
                         if (!layer) return;
                         var popupHtml = getPopupHtml(featureId, title);
                         var maxWidth = Math.min(map.getSize().x * 0.7, 300);
-                        layer.bindPopup($compile(angular.element(popupHtml))(scope)[0], {
-                            autoPan: false,
-                            maxWidth: maxWidth
-                        });
+                        var popup = L.responsivePopup().setContent($compile(angular.element(popupHtml))(scope)[0]);
+                        layer.bindPopup(popup);
                         layer.openPopup(latLng);
                         hasPopup = true;
                     }
@@ -898,17 +929,21 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 
                 function tryAddWMS(data, state) {
                     clearAndRemove(addedLayers);
+                    if (!data.wmsParams) return;
 
                     data.wmsParams.forEach(function (wmslayer) {
-                        if (wmslayer.epsg in crsArray) {
+                        var crs = utils.getValidCrs(wmslayer.crsOptions);
+                        if (crs) {
                             var l = L.tileLayer.wms(wmslayer.url, {
                                     layers: wmslayer.name,
-                                    srs: wmslayer.epsg,
-                                    crs: crsArray[wmslayer.epsg],
+                                    srs: crs,
+                                    crs: crs,
                                     version: wmslayer.version,
                                     format: wmslayer.format,
+                                    title: wmslayer.title,
                                     transparent: true,
                                     attribution: wmslayer.attribution,
+                                    exceptions: wmslayer.exceptions,
                                     opacity: 0.8,
                                     reuseTiles: true
                                 }
@@ -917,8 +952,17 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
                         }
                     });
 
+                    if (addedLayers.length === 0) {
+                        toaster.pop({
+                            type: 'error',
+                            title: "Sorry",
+                            body: 'No layers with valid projection (' + utils.validProjections + ')',
+                            bodyOutputType: 'trustedHtml'
+                        });
+                    }
+
                     addedLayers.forEach(function (l) {
-                        layerCtrl.addOverlay(l, l.options.layers);
+                        layerCtrl.addOverlay(l, l.options.title || l.options.layers);
                         if (state && state[l.options.layers] && state[l.options.layers].checked) {
                             map.addLayer(l);
                         }
@@ -963,12 +1007,13 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
             restrict: 'E',
             scope: {list: '=', selected: '='},
             template: '<div class="list-group">' +
-            '<a href="" id="{{prefix + feature.id}}" class="list-group-item" ng-repeat="feature in list | orderBy:\'properties.description\'"' +
+            '<a href="" id="{{prefix + feature.elementId}}" class="list-group-item" ng-repeat="feature in items | orderBy:\'properties.description\'"' +
             ' value="feature.id" ng-class="{selected:feature.id == selected.id && feature.datasetId == selected.datasetId}" ng-click="selectFeature(feature)">{{feature.properties.description}}</a>' +
             '</div>',
             link: function (scope, element, attributes) {
                 var timeoutFn;
                 scope.prefix = (attributes['id'] || 'featureList') + "_";
+                scope.items = null;
                 scope.selectFeature = function (feature) {
                     scope.$emit("feature-selected", {
                         featureId: feature.id,
@@ -980,17 +1025,33 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
                     scrollToItem(changeObj.featureId ? changeObj.featureId : changeObj.id);
                 });
                 scope.$watch("list", function (newValue) {
+                    scope.items = initItems(newValue);
                     if (!scope.selected) return;
                     if (timeoutFn) $timeout.cancel(timeoutFn);
                     timeoutFn = $timeout(function () {
                         scrollToItem(scope.selected.id)
                     }, 100);
-                });
+                }, true);
+
+                var getElementId = function (id) {
+                    return id.replace(/[\s()\[\]]+/g, "_");
+                };
+
+                function initItems(itemList) {
+                    if (!itemList) return [];
+                    var newList = [];
+                    for (var i = 0; i < itemList.length; i++) {
+                        var item = itemList[i];
+                        item.elementId = getElementId(item.id);
+                        newList.push(item);
+                    }
+                    return newList;
+                }
 
                 function scrollToItem(id) {
                     if (!id) return;
-
-                    var el = angular.element('#' + scope.prefix + id);
+                    var elementId = getElementId(id);
+                    var el = angular.element('#' + scope.prefix + elementId);
                     if (el && el[0] && el[0].offsetParent) {
                         el = el[0];
                         var parent = el.offsetParent;
@@ -1067,17 +1128,18 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 
                 function setHeader() {
                     if (!scope.feature) return;
-                    scope.title = scope.feature.mode == 'cluster' || !scope.feature.viewModel ? scope.feature.title : scope.feature.viewModel.title;
+                    scope.title = scope.feature.mode == 'cluster' || !scope.feature.viewModel || !scope.feature.viewModel.title ? scope.feature.title : scope.feature.viewModel.title;
                     headerChangeTimeout();
                 }
 
                 function setHeaderHeight() {
-                    scope.detailHeaderHeight = Math.max(header.clientHeight + margin, 25 + margin);
-                    //console.log("detailHeaderHeight: " + scope.detailHeaderHeight, " parent.offsetTop: ", parent.offsetTop, "header height:" + header.clientHeight, "margin:" + margin);
+                    scope.detailHeaderHeight = Math.max((header ? header.clientHeight + margin : 0), 25 + margin);
+                    // console.log("detailHeaderHeight: " + scope.detailHeaderHeight, " parent.offsetTop: ", parent.offsetTop, "header height:" + (header ? header.clientHeight : 0), "margin:" + margin);
                 }
 
                 function getMargin() {
                     try {
+                        if (!header) return 0;
                         var top = parseInt(angular.element(header).css('margin-top'));
                         var bottom = parseInt(angular.element(header).css('margin-bottom'));
                         return top + bottom;

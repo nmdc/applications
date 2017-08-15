@@ -25,7 +25,9 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
         .factory('dataService', ['$http', 'toaster', 'utils', 'appState', dataService])
         .factory('utils', ['$filter', '$location', utils])
         .factory('geoLocation', [geoLocation])
-        .filter('titleCase', titleCase);
+        .filter('titleCase', titleCase)
+        .filter('urlFile', urlFile)
+        .filter('citationYear', ['utils', citationYear]);
 
     function appState($window, $routeParams, utils, geoLocation) {
         var service = {
@@ -134,28 +136,32 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
             },
             getData: function (store) {
                 service.lastQuery = getDataQueryPart(service.queryDateFormat);
-                $http.get('getDataInside' + service.lastQuery).success(function (data) {
-                    updateFeatureMap(data, true);
-                    appState.content = data;
-                    appState.completeList = appState.content.features.concat(appState.related.features);
-                    if (store) appState.store();
-                }).error(errorFn);
-                $http.get('getDataRelated' + service.lastQuery).success(function (data) {
-                    updateFeatureMap(data, false);
-                    appState.related = data;
-                    appState.completeList = appState.content.features.concat(appState.related.features);
-                }).error(errorFn);
+                $http.get('getDataInside' + service.lastQuery)
+                    .then(function (response) {
+                        updateFeatureMap(response.data, true);
+                        appState.content = response.data;
+                        appState.completeList = appState.content.features.concat(appState.related.features);
+                        if (store) appState.store();
+                    }, errorFn);
+                $http.get('getDataRelated' + service.lastQuery)
+                    .then(function (response) {
+                        updateFeatureMap(response.data, false);
+                        appState.related = response.data;
+                        appState.completeList = appState.content.features.concat(appState.related.features);
+                    }, errorFn);
             },
             getDetails: function (id, attributes, callback) {
-                $http.get('getDetails?ID=' + id + (attributes ? "&ATTRIBUTES=" + attributes : "")).success(function (data) {
-                    callback(data);
-                }).error(errorFn);
+                $http.get('getDetails?ID=' + id + (attributes ? "&ATTRIBUTES=" + attributes : ""))
+                    .then(function (response) {
+                        callback(response.data);
+                    }, errorFn);
             },
 
             getWmsParameters: function (urls, callback) {
-                $http.get('getWmsParameters?URL=' + urls.map(encodeURIComponent).join("&URL=")).success(function (data) {
-                    callback(data);
-                }).error(errorFn);
+                $http.get('getWmsParameters?URL=' + urls.map(encodeURIComponent).join("&URL="))
+                    .then(function (response) {
+                        callback(response.data);
+                    }, errorFn);
             }
         };
         return service;
@@ -163,8 +169,26 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 
     function utils($filter, $location) {
         var host = getHost();
-        return {
+        var validCrsList = {
+            'EPSG:3857': L.CRS.EPSG3857,
+            'EPSG:4326': L.CRS.EPSG4326,
+            'EPSG:900913': L.CRS.EPSG900913,
+            'EPSG:3395': L.CRS.EPSG3395,
+            '': L.CRS.EPSG3857 // if no info, we take our chance with the standard projection
+        };
+        var validProjections = '';
+        for (var crs in validCrsList) {
+            if (crs !== '') {
+                if (validProjections.length > 0) {
+                    validProjections += ', ';
+                }
+                validProjections += crs;
+            }
+        }
+
+        var service = {
             host: host,
+            validProjections: validProjections,
             bboxArea: getArea,
             isValidDate: function (d) {
                 if (!angular.isDate(d))
@@ -176,7 +200,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
                 try {
                     if (!val) return '';
                     var date = angular.isString(val) ? new Date(Date.parse(val)) : val;
-                    if (this.isValidDate(date)) {
+                    if (service.isValidDate(date)) {
                         return $filter('date')(date, dateFormat);
                     }
                     return '';
@@ -185,10 +209,10 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
                     return '';
                 }
             },
-            getGeoInfo: function(feature) {
+            getGeoInfo: function (feature) {
                 return getGeoInfo(feature.geometry);
             },
-            parseCenter: function(str, defaultValue){
+            parseCenter: function (str, defaultValue) {
                 if (!str) return defaultValue;
                 try {
                     var parts = str.split(',');
@@ -197,24 +221,36 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
                     }
                     return {lat: parts[1], lng: parts[0]}
                 }
-                catch(err){
+                catch (err) {
                     return defaultValue;
                 }
             },
             getFeatureDetailViewModel: function (data) {
-                var details = getDetailModel(data);
-                var title = data["Entry_Title"];
+                var dataItem = data['meta']['nmdc-metadata']['DIF'];
+                var meta = data['meta'];
+                var title = dataItem["Entry_Title"];
                 return {
                     title: title,
-                    details: details,
-                    mailTo: getMailTo(title, details),
-                    wms: getWmsUrlOrNull(data, "Data_URL")
+                    landingPage: data['landingpage'],
+                    meta: meta,
+                    details: dataItem,
+                    wms: getWmsUrlOrNull(dataItem, "Related_URL")
                 }
             },
-            getMailBody: function(data) {
+            getMailBody: function (data) {
                 return getMailBody(getDetailModel(data));
+            },
+            getValidCrs: function(crsList) {
+                if (!crsList || crsList.length === 0) return null;
+                for (var crs in validCrsList) {
+                    if (crsList.indexOf(crs) > -1) {
+                        return validCrsList[crs];
+                    }
+                }
+                return null;
             }
         };
+        return service;
 
         function getHost() {
             var host = $location.protocol() + "://" + $location.host();
@@ -229,10 +265,13 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
             var geoInfo = [];
             switch (geometry.type) {
                 case 'Point':
-                    geoInfo.push({area: 0, popupPoints: [{lat: geometry.coordinates[1], lng: geometry.coordinates[0]}]});
+                    geoInfo.push({
+                        area: 0,
+                        popupPoints: [{lat: geometry.coordinates[1], lng: geometry.coordinates[0]}]
+                    });
                     break;
                 case 'MultiPoint':
-                    geometry.coordinates.forEach(function(coords) {
+                    geometry.coordinates.forEach(function (coords) {
                         geoInfo.push({area: 0, popupPoints: [{lat: coords[1], lng: coords[0]}]});
                     });
                     break;
@@ -250,7 +289,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 
         function getBoundsInfo(coordinates) {
             var minX = 180, maxX = -180, minY = 90, maxY = -90;
-            coordinates.forEach(function(xy) {
+            coordinates.forEach(function (xy) {
                 minX = Math.min(minX, xy[0]);
                 maxX = Math.max(maxX, xy[0]);
                 minY = Math.min(minY, xy[1]);
@@ -259,15 +298,15 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
             var points = [];
             var yDiff = (maxY - minY);
             var xDiff = (maxX - minX);
-            points.push({lat: minY + (yDiff)/2, lng: minX + xDiff/2});
-            points.push({lat: minY + (yDiff)/4, lng: minX + xDiff/2});
-            points.push({lat: maxY - (yDiff)/4, lng: minX + xDiff/2});
+            points.push({lat: minY + (yDiff) / 2, lng: minX + xDiff / 2});
+            points.push({lat: minY + (yDiff) / 4, lng: minX + xDiff / 2});
+            points.push({lat: maxY - (yDiff) / 4, lng: minX + xDiff / 2});
 
-            points.push({lat: minY + (yDiff)/2, lng: minX + xDiff/2});
-            points.push({lat: minY + (yDiff)/2, lng: minX + xDiff/4});
-            points.push({lat: minY + (yDiff)/2, lng: maxX - xDiff/4});
+            points.push({lat: minY + (yDiff) / 2, lng: minX + xDiff / 2});
+            points.push({lat: minY + (yDiff) / 2, lng: minX + xDiff / 4});
+            points.push({lat: minY + (yDiff) / 2, lng: maxX - xDiff / 4});
             var bbox = [minX, minY, maxX, maxY];
-            return {bbox:bbox, area: getArea(bbox), popupPoints: points};
+            return {bbox: bbox, area: getArea(bbox), popupPoints: points};
         }
 
         function getArea(bbox) {
@@ -283,7 +322,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
                     try {
                         tmp = decodeURIComponent(result[key]);
                     }
-                    catch(err){
+                    catch (err) {
                         console.log(err);
                     }
                     result[key] = getValueArray(key, tmp);
@@ -294,7 +333,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
             return result;
         }
 
-        function combineAttributes(result, attributes, key, separator){
+        function combineAttributes(result, attributes, key, separator) {
             if (!result[attributes[0]]) return result;
             var size = result[attributes[0]].length;
             var textStr = [];
@@ -325,14 +364,16 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 
         function getValueArray(key, value) {
             value = value.replace(/\s*>\s*/g, " > ");
-            if (value && value.charAt(0) == "[" && value.charAt(value.length-1) == "]") {
-                value = value.substring(1, value.length-1);
+            if (value && value.charAt(0) === "[" && value.charAt(value.length - 1) === "]") {
+                value = value.substring(1, value.length - 1);
                 if (value.indexOf("://") > -1) {
                     // an url may contain comma to separate parameter values
                     value = splitAndReduceUrls(key, value);
                 }
                 else {
-                    value = value.trim().split(/\s*,\s*/).map(function(item) {return handleValueItem(key, item)});
+                    value = value.trim().split(/\s*,\s*/).map(function (item) {
+                        return handleValueItem(key, item)
+                    });
                 }
             }
             else {
@@ -342,8 +383,9 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
         }
 
         function splitUrls(value) {
+            if (value === undefined || value === null) return [];
             var arr = [];
-            var decodedValue = decodeURIComponent(value).replace(/[\[\]']+/g,''); // decode and remove brackets
+            var decodedValue = decodeURIComponent(value).replace(/[\[\]']+/g, ''); // decode and remove brackets
             var parts = decodedValue.split("://");
             if (parts.length < 2) return [value];
 
@@ -356,7 +398,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
                     arr.push(valueItem);
                 }
                 if (end < parts[i].length) {
-                    protocol = parts[i].substring(end+1).trim();
+                    protocol = parts[i].substring(end + 1).trim();
                 }
             }
             return arr;
@@ -376,7 +418,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
                     arr.push(valueItem);
                 }
                 if (end < parts[i].length) {
-                    protocol = parts[i].substring(end+1).trim();
+                    protocol = parts[i].substring(end + 1).trim();
                 }
             }
             //console.log(angular.toJson(arr, true));
@@ -384,12 +426,12 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
         }
 
         function handleValueItem(key, value) {
-            if (key.toLowerCase() == "data_url" && value.indexOf("://") > -1) {
-                value = {url:value, text: getLinkText(value), type: 'url'}
+            if (key.toLowerCase() === "data_url" && value.indexOf("://") > -1) {
+                value = {url: value, text: getLinkText(value), type: 'url'}
             }
-            else if (key.toLowerCase() == "scientific_keyword" && value.indexOf(">") > -1) {
+            else if (key.toLowerCase() === "scientific_keyword" && value.indexOf(">") > -1) {
                 var tmp = value.split(">");
-                value = {fullText:value, text: tmp[tmp.length-1].trim(), type : 'expand'};
+                value = {fullText: value, text: tmp[tmp.length - 1].trim(), type: 'expand'};
             }
             else value = {text: value, type: "text"};
             return value;
@@ -405,7 +447,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
                     var idx = 0;
                     if (protocol == "ftp") {
                         idx = parts[1].lastIndexOf(".");
-                        text = idx > -1 ? parts[1].substring(idx+1) : "";
+                        text = idx > -1 ? parts[1].substring(idx + 1) : "";
                     }
                     else if (protocol == "http") {
                         idx = parts[1].indexOf("/");
@@ -417,7 +459,8 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
                     text = protocol + " " + text;
                 }
             }
-            catch(err){}
+            catch (err) {
+            }
             return text;
         }
 
@@ -427,6 +470,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
         }
 
         function getMailLines(data, property) {
+            if (!data[property]) return "";
             var str = "";
             for (var i = 0; i < data[property].length; i++) {
                 str += (data[property][i].url ? data[property][i].url : data[property][i].text) + "\n";
@@ -441,17 +485,28 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
         }
 
         function getWmsUrlOrNull(data, urlKey) {
-            var value = splitUrls(data[urlKey]);
+            var value = getUrls(data[urlKey]);
             var reduced = value.filter(function (e) {
-                return e.toLowerCase().indexOf("wms") > -1;
+                return e.toLowerCase && e.toLowerCase().indexOf("wms") > -1;
             });
-            if (reduced.length == 0) {
+            if (reduced.length === 0) {
                 return null;
             }
             else {
                 return reduced;
             }
         }
+    }
+
+    function getUrls(relatedUrls) {
+        if (!relatedUrls) return [];
+        var arr = [];
+        relatedUrls.forEach(function(item) {
+            if (item['URL'] && arr.indexOf(item['URL']) === -1) {
+                arr.push(item['URL']);
+            }
+        });
+        return arr;
     }
 
     function geoLocation() {
@@ -484,4 +539,26 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
         }
     }
 
+    function urlFile() {
+        return function(input){
+            if(!angular.isString(input) || input === '') return '';
+            var items = input.split('/');
+
+            var result = '';
+            var protocolEndIdx = items[0].lastIndexOf(':');
+            if (protocolEndIdx > -1) {
+                result += items[0].substr(0, protocolEndIdx) + '://...';
+            }
+            result += items[items.length-1];
+            return result;
+        }
+    }
+
+    function citationYear(utils) {
+        return function(input){
+            if(!angular.isString(input) || input === '') return '';
+            var dateStr = input.replace(/T(\d\d):(\d\d):(\d\d):/, 'T$1:$2:$3.');
+            return '(' + utils.getFormattedDateValue(dateStr, 'yyyy') + ')';
+        }
+    }
 })();
