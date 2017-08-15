@@ -1,17 +1,27 @@
-# Copyright (c) 2016 Norwegian Marine Data Centre
+# Copyright (c) 2016, Christian Michelsen Research AS
+# All rights reserved.
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
-# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
-# persons to whom the Software is furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in all copies or substantial
-# portions of the Software.
-
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
-# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-# COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-# OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+# * Redistributions of source code must retain the above copyright
+#   notice, this list of conditions and the following disclaimer.
+# * Redistributions in binary form must reproduce the above copyright
+#   notice, this list of conditions and the following disclaimer in the
+#   documentation and/or other materials provided with the distribution.
+# * Neither the name of the Christian Michelsen Research AS nor the
+#   names of its contributors may be used to endorse or promote products
+#   derived from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL Christian Michelsen Research AS BE LIABLE FOR ANY
+# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 import collections
@@ -20,6 +30,7 @@ import geojson
 from tornado import log, httpclient, escape
 
 import util
+import xmltodict
 
 GEOJSON_MARKER_OPTIONS_DEFAULT = {"fillColor": "#00ff00", "color": "#ffffff", "weight": 2, "opacity": 1,
                                   "fillOpacity": 0.1}
@@ -139,9 +150,9 @@ def generate_non_unique_polygon_dict(datasets):
     for d in [d for d in datasets if 'POLY' in d['location_rpt']]:
         p = d['location_rpt']
         if p in out:
-            out[p] += [d['Entry_ID']]
+            out[p] += [util.get_id(d)]
         else:
-            out[p] = [d['Entry_ID']]
+            out[p] = [util.get_id(d)]
     return {k: out[k] for k in out if len(out[k]) > 1 and len(collections.Counter(out[k])) > 1}
 
 
@@ -198,6 +209,42 @@ def generate_dummy_poly_dataset(polygon, dataset_template, dataset_ids):
 
 def filter_detail_dict(detail_dict, attribute_list):
     if attribute_list is not None:
-        return util.filter_dict(detail_dict, attribute_list)
+        tmp_dict = detail_dict['meta']['nmdc-metadata']['DIF']
+        detail_dict['meta']['nmdc-metadata']['DIF'] = util.filter_dict(tmp_dict, attribute_list)
+        return detail_dict
     else:
         return detail_dict
+
+
+def parse_detail_response(response, namespaces, page_prefix):
+    decoded = xmltodict.parse(response.body, process_namespaces=True, namespaces=namespaces)
+    if decoded['meta'] and decoded['meta']['nmdc-metadata'] and decoded['meta']['nmdc-metadata']['DIF']:
+        decoded['meta']['nmdc-metadata']['DIF'] = to_list_for_attributes(decoded['meta']['nmdc-metadata']['DIF'], ['Originating_Center', 'Data_Set_Citation', 'Access_Constraints', 'Summary', 'Keyword', 'Related_URL'])
+
+    if decoded['meta'] and decoded['meta']['parameters'] and decoded['meta']['parameters']['pDefs'] and decoded['meta']['parameters']['pDefs']['pDef']:
+        decoded['meta']['parameters']['pDefs']['pDef'] = to_list(decoded['meta']['parameters']['pDefs']['pDef'])
+
+    idx = response.request.url.rfind('/')
+    entry_id = response.request.url[idx+1:] if -1 < idx < len(response.request.url)-1 else None
+    landing_page = page_prefix + entry_id if entry_id is not None else None
+    decoded['landingpage'] = landing_page
+    return decoded
+
+
+def to_list_for_attributes(dict_object, attribute_list):
+    for attribute in attribute_list:
+        if attribute in dict_object:
+            dict_object[attribute] = to_list(dict_object[attribute])
+        else:
+            dict_object[attribute] = []
+
+    return dict_object
+
+
+def to_list(dict_object):
+    if isinstance(dict_object, list):
+        return dict_object
+    else:
+        return [dict_object]
+
+

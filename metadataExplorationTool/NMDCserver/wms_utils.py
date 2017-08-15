@@ -1,4 +1,4 @@
-# Copyright (c) 2016 Norwegian Marine Data Centre
+# Copyright (c) 2017 Norwegian Marine Data Centre
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -16,6 +16,7 @@
 
 from xml.etree import ElementTree as Et
 from tornado import httpclient, log
+from owslib.wms import WebMapService
 
 
 class Wms:
@@ -112,3 +113,30 @@ def extract_wms_parameters(url):
             'error': wms.error
         }]
     return out
+
+
+def get_layers(url, version='1.3.0'):
+    try:
+        wms = WebMapService(url, version)
+        layers = get_queryable_layers(url, wms)
+        return {'title': wms.identification.title, 'url': url, 'layers': layers, 'version': wms.version}
+    except:
+        return {'layers': []}
+
+
+
+def get_queryable_layers(url, wms):
+    names = list(wms.contents)
+    formats = wms.getOperationByName('GetMap').formatOptions
+    access_constraints = wms.identification.accessconstraints if hasattr(wms, 'identification') else ''
+    layer_format = 'image/png' if 'image/png' in formats else formats[0]
+    exception_format = 'INIMAGE' if 'INIMAGE' in wms.exceptions else wms.exceptions[0]
+    first_layer = wms[names[0]]
+    attribution = first_layer.attribution['title'] if hasattr(first_layer, 'attribution') else access_constraints
+    layers = []
+    for name in names:
+        layers.append({'name': name, 'title': wms[name].title, 'url': url, 'version': wms.version, 'exceptions': exception_format,
+                       'queryable': wms[name].queryable, 'crsOptions': wms[name].crsOptions, 'format': layer_format,
+                       'attribution': wms[name].attribution['title'] if hasattr(wms[name], 'attribution') else attribution})
+
+    return layers

@@ -1,3 +1,4 @@
 {
- "directory" : "resources/bower_components"
+ "directory" : "resources/bower_components",
+ "ca": "//ad.cmr.no/cmrdfs1/cmr-computing/felles/cmr/CMR+Root+CA.cer" 
 }

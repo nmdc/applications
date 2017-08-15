@@ -1,4 +1,4 @@
-# Copyright (c) 2016 Norwegian Marine Data Centre
+# Copyright (c) 2017 Norwegian Marine Data Centre
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -28,11 +28,20 @@ def request_to_dict(request):
 def get_data_dictionary(rows):
     data_dict = {}
     for row in rows:
-        data_id = row['Entry_ID']
+        data_id = get_id(row)
         if data_id not in data_dict:
             data_dict[data_id] = []
         data_dict[data_id].append(row)
     return data_dict
+
+
+def get_id(item):
+    url = item['landingpage']
+    if url:
+        idx = url.rfind('/')
+        return url[idx+1:] if -1 < idx < len(url)-1 else item['Entry_ID']
+    else:
+        return item['Entry_ID']
 
 
 def get_date_string(date_text):

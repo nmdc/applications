@@ -1,4 +1,4 @@
-# Copyright (c) 2016 Norwegian Marine Data Centre
+# Copyright (c) 2017 Norwegian Marine Data Centre
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -12,6 +12,7 @@
 # WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 # COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 
 import os
 import multiprocessing
@@ -55,6 +56,7 @@ class DetailsHandler(BaseHandler):
     def get(self):
         dataset_ids = self.get_query_arguments('ID')[0].split(',')
         attrib = self.get_query_arguments('ATTRIBUTES')
+        namespaces = {'http://www.nmdc.org/2015/01/Metadata': None, 'http://gcmd.gsfc.nasa.gov/Aboutus/xml/dif/': None}
         if len(attrib) > 0:
             dataset_attributes = attrib[0].split(',')
         else:
@@ -62,10 +64,10 @@ class DetailsHandler(BaseHandler):
         response = {}
         try:
             http = httpclient.AsyncHTTPClient()
-            res = yield [http.fetch(API_URL + 'getMetadataDetails?doi=' + escape.url_escape(dataset_id)) for dataset_id
+            res = yield [http.fetch(API_URL + 'nmdcXML/' + escape.url_escape(dataset_id)) for dataset_id
                          in dataset_ids]
-            response['datasetDetails'] = [
-                dsu.filter_detail_dict(escape.json_decode(body.body)['results'][0], dataset_attributes) for body in res]
+            decoded = [dsu.parse_detail_response(item, namespaces, API_URL + 'landingpage/') for item in res]
+            response['datasetDetails'] = [dsu.filter_detail_dict(item, dataset_attributes) for item in decoded]
         except Exception as e:
             log.app_log.error('DETAIL request failed for ID = ' + str(dataset_ids) + '\n' +
                               '(' + e.message + ')')
@@ -77,12 +79,12 @@ class WmsParametersHandler(BaseHandler):
         wms_urls = self.get_query_arguments('URL')
         out = {'wmsParams': []}
         for url in wms_urls:
-            out['wmsParams'] += wms_utils.extract_wms_parameters(url)['wmsParams']
+            out['wmsParams'] += wms_utils.get_layers(url)['layers']
         self.write(out)
 
 
 class DownloadPageHandler(web.RequestHandler):
-    DATASET_ATTRIBUTES = 'Entry_Title,Entry_ID,Data_Summary,Data_URL'
+    DATASET_ATTRIBUTES = 'Entry_Title,Entry_ID,Summary,Related_URL'
 
     def __init__(self, app, request, **kwargs):
          super(DownloadPageHandler, self).__init__(app, request, **kwargs)
@@ -171,8 +173,10 @@ def setup_logging():
 def string_to_list(list_as_string):
     return [escape.url_unescape(l) for l in list_as_string.strip('[]').split(',')]
 
+
 LOCAL_PATH = os.path.dirname(os.path.realpath(__file__))
 ENV = jinja2.Environment(loader=jinja2.FileSystemLoader(LOCAL_PATH + '/resources/htmlTemplates'))
+ENV.add_extension('jinja2.ext.with_')
 ENV.filters['stringToList'] = string_to_list
 API_URL = 'http://prod1.nmdc.no/metadata-api/'
 
